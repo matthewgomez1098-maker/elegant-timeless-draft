@@ -498,3 +498,9 @@ body.drawer-open{overflow:hidden}
 .car-d i{width:.45rem;height:.45rem;border-radius:1rem;background:rgba(255,255,255,.6);box-shadow:0 0 0 1px rgba(0,0,0,.12);transition:width .35s var(--ease),background-color .35s}
 .car-d i.on{width:1.25rem;background:#fff}
 .car-c{position:absolute;top:.8rem;right:.8rem;font:500 .68rem/1 var(--sans);letter-spacing:.08em;background:rgba(10,9,8,.62);color:var(--ivory);padding:.4rem .6rem;border-radius:1rem;pointer-events:none}
+
+/* --- Spanish nav labels are longer: tighten so they never collide with the language switch */
+html[lang=es] .nav{gap:1.35rem}
+html[lang=es] .nav a{letter-spacing:.13em}
+@media (max-width:1400px){html[lang=es] .hd-cta{display:none}}
+@media (max-width:1180px){html[lang=es] .nav{display:none}html[lang=es] .burger{display:grid}html[lang=es] .hd-act>.lang{display:none}html[lang=es] .hd-in{justify-content:space-between}}
