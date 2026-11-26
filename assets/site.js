@@ -264,12 +264,14 @@
         var it = INV[k];
         return { en: it.en || it.n, local: it.n, cat: it.c || 'Other', unit: it.ue || it.u, lunit: it.u, price: it.p, qty: Q[k], total: it.p != null ? it.p * Q[k] : null };
       });
-      var d = val('date'), dateTxt = d;
-      if (d) { var p = d.split('-'); dateTxt = new Date(+p[0], +p[1] - 1, +p[2]).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }); }
+      var d = val('date'), dateTxt = d, dateShort = d;
+      if (d) { var p = d.split('-'), dd = new Date(+p[0], +p[1] - 1, +p[2]);
+        dateTxt = dd.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        dateShort = dd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); }
       var setup = (form.querySelector('input[name=setup]:checked') || {}).value;
       return {
         id: id, when: now.toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }),
-        name: val('name'), email: val('email'), phone: val('phone'), date: dateTxt, type: val('type'), guests: val('guests'), venue: val('venue'),
+        name: val('name'), email: val('email'), phone: val('phone'), date: dateTxt, dateShort: dateShort, type: val('type'), guests: val('guests'), venue: val('venue'),
         setup: { yes: 'Yes, setup and teardown requested', no: 'No, delivery only', unsure: 'Not sure yet' }[setup] || 'Not answered',
         notes: val('msg'), lines: lines,
         subtotal: lines.reduce(function (a, l) { return a + (l.total || 0); }, 0),
@@ -282,8 +284,10 @@
     /* The owner's receipt: always English, one field per row so it reads as a table in the email. */
     function receipt(o) {
       var f = {}, none = '(not given)';
-      f._subject = 'New quote request ' + o.id + ' | ' + o.name + ' | ' + (o.date || 'no date') + ' | est. ' + usd(o.subtotal);
+      // The subject doubles as the text-message alert (a text shows the subject first), so it carries the essentials.
+      f._subject = 'New order ' + o.id + ': ' + o.name + ', ' + (o.dateShort || 'no date') + ', ' + o.pieces + ' pieces, est ' + usd(o.subtotal) + (o.phone ? ', ' + o.phone : '');
       f._template = 'table'; f._captcha = 'false';
+      var cc = form.getAttribute('data-cc'); if (cc) f._cc = cc;
       f['Order number'] = o.id;
       f['Submitted'] = o.when;
       f.name = o.name; f.email = o.email;
