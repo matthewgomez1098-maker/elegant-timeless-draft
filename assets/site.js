@@ -19,6 +19,9 @@
   onScroll();
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll);
+  window.addEventListener('load', onScroll);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(onScroll);
+  if (bar && 'ResizeObserver' in window) new ResizeObserver(onScroll).observe(bar);   // the bar re-wraps when fonts load
 
   /* ---------- land on #anchors reliably (reveal animations shift layout) */
   window.addEventListener('load', function () {
