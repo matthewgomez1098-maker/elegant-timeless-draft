@@ -281,36 +281,27 @@
       };
     }
 
-    /* The owner's receipt: always English, one field per row so it reads as a table in the email. */
-    function receipt(o) {
-      var f = {}, none = '(not given)';
-      // The subject doubles as the text-message alert (a text shows the subject first), so it carries the essentials.
-      f._subject = 'New order ' + o.id + ': ' + o.name + ', ' + (o.dateShort || 'no date') + ', ' + o.pieces + ' pieces, est ' + usd(o.subtotal) + (o.phone ? ', ' + o.phone : '');
-      f._template = 'table'; f._captcha = 'false';
-      var cc = form.getAttribute('data-cc'); if (cc) f._cc = cc;
-      f['Order number'] = o.id;
-      f['Submitted'] = o.when;
-      f.name = o.name; f.email = o.email;
-      f['Phone'] = o.phone || none;
-      f['Event date'] = o.date || none;
-      f['Event type'] = o.type || none;
-      f['Guest count'] = o.guests || none;
-      f['Venue or city'] = o.venue || none;
-      f['Setup and teardown'] = o.setup;
-      f['Items requested'] = o.lines.length ? o.lines.length + ' line(s), ' + o.pieces + ' piece(s)' : 'None selected. See the customer notes.';
-      o.lines.forEach(function (l, i) {
-        f['Item ' + pad(i + 1)] = l.qty + ' x ' + l.en + (l.price != null
-          ? ' @ ' + usd(l.price) + ' ' + l.unit + ' = ' + usd(l.total)
-          : ' (custom quote: price to be confirmed)');
-      });
-      f['Estimated subtotal'] = usd(o.subtotal) + (o.unpriced ? ' plus ' + o.unpriced + ' item(s) to be quoted' : '');
-      f['Not included'] = 'Delivery, setup and tax';
-      var groups = {};
-      o.lines.forEach(function (l) { (groups[l.cat] = groups[l.cat] || []).push(l.qty + ' x ' + l.en); });
-      Object.keys(groups).forEach(function (g) { f['To prepare: ' + g] = groups[g].join('; '); });
-      f['Customer notes'] = o.notes || '(none)';
-      f['Site language used'] = o.lang;
-      return f;
+    /* What travels to the owner: only keys, quantities and the customer's answers. The watcher prices it from its own catalog. */
+    function payload(o) {
+      return { v: 1, id: o.id, ts: Date.now(), n: o.name, e: o.email, p: o.phone, d: val('date'), ty: o.type, g: o.guests, ve: o.venue,
+               s: (form.querySelector('input[name=setup]:checked') || {}).value || '', m: o.notes.slice(0, 1000), l: lang,
+               q: Object.keys(Q).map(function (k) { return [k, Q[k]]; }) };
+    }
+
+    /* Encrypt in the browser so only the owner can read it: a one-time AES key, wrapped with the owner's public RSA key. */
+    function seal(obj) {
+      var c = window.crypto, sub = c && c.subtle;
+      if (!sub) return Promise.reject(new Error('This browser cannot encrypt'));
+      var b64 = function (buf) { var s = '', u = new Uint8Array(buf); for (var i = 0; i < u.length; i++) s += String.fromCharCode(u[i]); return btoa(s); };
+      var bin = atob(form.getAttribute('data-key')), spki = new Uint8Array(bin.length);
+      for (var i = 0; i < bin.length; i++) spki[i] = bin.charCodeAt(i);
+      var raw = c.getRandomValues(new Uint8Array(32)), iv = c.getRandomValues(new Uint8Array(16));
+      return Promise.all([
+        sub.importKey('spki', spki, { name: 'RSA-OAEP', hash: 'SHA-1' }, false, ['encrypt']),
+        sub.importKey('raw', raw, { name: 'AES-CBC' }, false, ['encrypt'])
+      ]).then(function (k) {
+        return Promise.all([sub.encrypt({ name: 'RSA-OAEP' }, k[0], raw), sub.encrypt({ name: 'AES-CBC', iv: iv }, k[1], new TextEncoder().encode(JSON.stringify(obj)))]);
+      }).then(function (r) { return 'ET1.' + b64(r[0]) + '.' + b64(iv) + '.' + b64(r[1]); });
     }
 
     function confirmation(o) {
@@ -338,10 +329,10 @@
       if (!endpoint) { msg.hidden = false; msg.textContent = S.c_preview; return; }
       var order = buildOrder();
       btn.disabled = true; btn.textContent = S.o_sending; msg.hidden = true;
-      fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, body: JSON.stringify(receipt(order)) })
-        .then(function (r) { return r.json(); })
-        .then(function (res) {
-          if (String(res.success) !== 'true') throw new Error(res.message || 'not sent');
+      seal(payload(order))
+        .then(function (body) { return fetch(endpoint, { method: 'POST', body: body }); })
+        .then(function (r) {
+          if (!r.ok) throw new Error('relay answered ' + r.status);
           Q = {}; save();
           confirmation(order);
         })
@@ -352,6 +343,6 @@
         });
     });
     form.addEventListener('input', function (e) { if (e.target.classList.contains('bad') && e.target.value.trim()) e.target.classList.remove('bad'); });
-    window.__etOrder = { build: buildOrder, receipt: receipt };                  // lets the receipt be inspected while testing
+    window.__etOrder = { build: buildOrder, payload: payload };                  // lets the order be inspected while testing
   }
 })();
