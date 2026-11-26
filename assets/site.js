@@ -128,7 +128,7 @@
     }
     var add = t.closest('[data-add]');
     if (add) {
-      var key = add.getAttribute('data-add'), card = add.closest('.item');
+      var key = add.getAttribute('data-add'), card = add.closest('.item, .pd');
       var v = Math.max(1, +(card && card.querySelector('.qty input') || {}).value || 1);
       Q[key] = v; save();
       var qb = $('.qbtn'); if (qb && qb.animate) qb.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.18)' }, { transform: 'scale(1)' }], { duration: 450, easing: 'ease-out' });
@@ -204,9 +204,11 @@
   /* ---------- inventory carousels: 3 photos per item */
   $$('[data-car]').forEach(function (car) {
     var tr = $('.car-t', car), dots = $$('.car-d i', car), cnt = $('.car-c', car), n = dots.length, cur = 0;
+    var wrap = car.closest('.pd-gal'), thumbs = wrap ? $$('[data-go]', wrap) : [];
+    thumbs.forEach(function (th, k) { th.addEventListener('click', function () { tr.scrollTo({ left: k * tr.clientWidth }); }); });
     tr.addEventListener('scroll', function () {
       var i = Math.round(tr.scrollLeft / tr.clientWidth);
-      if (i !== cur) { cur = i; dots.forEach(function (dt, j) { dt.classList.toggle('on', j === i); }); cnt.textContent = (i + 1) + ' / ' + n; }
+      if (i !== cur) { cur = i; dots.forEach(function (dt, j) { dt.classList.toggle('on', j === i); }); cnt.textContent = (i + 1) + ' / ' + n; thumbs.forEach(function (th, k) { th.classList.toggle('on', k === i); }); }
     }, { passive: true });
     car.addEventListener('click', function (ev) {
       var st = ev.target.closest('[data-car-step]');
