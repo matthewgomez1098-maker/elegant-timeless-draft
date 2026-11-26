@@ -482,3 +482,19 @@ body.drawer-open{overflow:hidden}
   .pkg{padding:2.5rem 1.5rem 1.75rem}
   .split-img::before{display:none}
 }
+
+/* --- inventory photo carousel (3 views per item) */
+.car{position:relative}
+.car-t{display:flex;width:100%;height:100%;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch;scroll-behavior:smooth}
+.car-t::-webkit-scrollbar{display:none}
+.car-s{flex:0 0 100%;height:100%;scroll-snap-align:start;scroll-snap-stop:always;cursor:zoom-in;overflow:hidden}
+.car-s img{width:100%;height:100%;object-fit:cover}
+.car-n{position:absolute;top:50%;transform:translateY(-50%);width:2.5rem;height:2.5rem;display:grid;place-items:center;background:rgba(251,247,238,.92);color:var(--ink);box-shadow:0 .4rem 1rem -.4rem rgba(0,0,0,.35);opacity:0;transition:opacity .3s,background-color .3s}
+.car-n:hover{background:var(--gold);color:var(--black)}
+.item:hover .car-n,.car-n:focus-visible{opacity:1}
+.car-n.prev{left:.7rem}.car-n.next{right:.7rem}
+@media (hover:none){.car-n{display:none}}
+.car-d{position:absolute;left:0;right:0;bottom:.85rem;display:flex;justify-content:center;gap:.4rem;pointer-events:none}
+.car-d i{width:.45rem;height:.45rem;border-radius:1rem;background:rgba(255,255,255,.6);box-shadow:0 0 0 1px rgba(0,0,0,.12);transition:width .35s var(--ease),background-color .35s}
+.car-d i.on{width:1.25rem;background:#fff}
+.car-c{position:absolute;top:.8rem;right:.8rem;font:500 .68rem/1 var(--sans);letter-spacing:.08em;background:rgba(10,9,8,.62);color:var(--ivory);padding:.4rem .6rem;border-radius:1rem;pointer-events:none}
