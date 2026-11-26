@@ -548,3 +548,8 @@ a.car-s{display:block;cursor:pointer}
 .pd-notes .ic{color:var(--gold-2);margin-top:.15rem}
 .pd-back{margin-top:3rem}
 @media (max-width:900px){.pd{grid-template-columns:1fr}.pd-gal{position:static}}
+
+/* --- hero video: clips play in sequence over the hero photo */
+.hero-vids{position:absolute;inset:0}
+.hero-vids video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 1s var(--ease)}
+.hero-vids video.on{opacity:1}

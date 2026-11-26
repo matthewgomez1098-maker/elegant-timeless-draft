@@ -31,6 +31,32 @@
   function ready() { body.classList.add('ready'); }
   if (heroImg && !heroImg.complete) { heroImg.addEventListener('load', ready); setTimeout(ready, 1800); } else { requestAnimationFrame(ready); }
 
+  /* ---------- hero video: play the clips one after another, forever */
+  (function () {
+    var box = $('[data-hero-vids]');
+    if (!box) return;
+    var still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var saver = navigator.connection && navigator.connection.saveData;
+    if (still || saver) return;                       // the photo stays
+    var vids = $$('video', box), cur = -1;
+    function load(v) { if (!v.getAttribute('src')) { v.src = v.getAttribute('data-src'); v.load(); } }
+    function show(i) {
+      var v = vids[i];
+      load(v);
+      var go = function () {
+        v.currentTime = 0;
+        var pr = v.play();
+        if (pr && pr.catch) pr.catch(function () {});
+        vids.forEach(function (o) { o.classList.toggle('on', o === v); });
+        cur = i;
+        load(vids[(i + 1) % vids.length]);            // warm up the next clip
+      };
+      if (v.readyState >= 3) go(); else v.addEventListener('canplay', go, { once: true });
+    }
+    vids.forEach(function (v, i) { v.addEventListener('ended', function () { if (i === cur) show((i + 1) % vids.length); }); });
+    show(0);
+  })();
+
   /* ---------- mobile menu */
   var burger = $('.burger'), mnav = $('#mnav');
   function menu(open) {
