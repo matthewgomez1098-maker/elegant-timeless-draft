@@ -250,15 +250,104 @@
     });
   });
 
-  /* ---------- contact form (preview: validates, does not send) */
+  /* ---------- quote request: total the order, email the owner an English receipt, confirm to the customer */
   var form = $('[data-form]');
   if (form) {
+    var usd = function (v) { return '$' + v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+    var val = function (n) { var f = form.elements[n]; return f && typeof f.value === 'string' ? f.value.trim() : ''; };
+    var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+
+    function buildOrder() {
+      var now = new Date();
+      var id = 'ET-' + String(now.getFullYear()).slice(2) + pad(now.getMonth() + 1) + pad(now.getDate()) + '-' + Math.floor(1000 + Math.random() * 9000);
+      var lines = Object.keys(Q).map(function (k) {
+        var it = INV[k];
+        return { en: it.en || it.n, local: it.n, cat: it.c || 'Other', unit: it.ue || it.u, lunit: it.u, price: it.p, qty: Q[k], total: it.p != null ? it.p * Q[k] : null };
+      });
+      var d = val('date'), dateTxt = d;
+      if (d) { var p = d.split('-'); dateTxt = new Date(+p[0], +p[1] - 1, +p[2]).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }); }
+      var setup = (form.querySelector('input[name=setup]:checked') || {}).value;
+      return {
+        id: id, when: now.toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }),
+        name: val('name'), email: val('email'), phone: val('phone'), date: dateTxt, type: val('type'), guests: val('guests'), venue: val('venue'),
+        setup: { yes: 'Yes, setup and teardown requested', no: 'No, delivery only', unsure: 'Not sure yet' }[setup] || 'Not answered',
+        notes: val('msg'), lines: lines,
+        subtotal: lines.reduce(function (a, l) { return a + (l.total || 0); }, 0),
+        pieces: lines.reduce(function (a, l) { return a + l.qty; }, 0),
+        unpriced: lines.filter(function (l) { return l.total == null; }).length,
+        lang: lang === 'es' ? 'Spanish' : 'English'
+      };
+    }
+
+    /* The owner's receipt: always English, one field per row so it reads as a table in the email. */
+    function receipt(o) {
+      var f = {}, none = '(not given)';
+      f._subject = 'New quote request ' + o.id + ' | ' + o.name + ' | ' + (o.date || 'no date') + ' | est. ' + usd(o.subtotal);
+      f._template = 'table'; f._captcha = 'false';
+      f['Order number'] = o.id;
+      f['Submitted'] = o.when;
+      f.name = o.name; f.email = o.email;
+      f['Phone'] = o.phone || none;
+      f['Event date'] = o.date || none;
+      f['Event type'] = o.type || none;
+      f['Guest count'] = o.guests || none;
+      f['Venue or city'] = o.venue || none;
+      f['Setup and teardown'] = o.setup;
+      f['Items requested'] = o.lines.length ? o.lines.length + ' line(s), ' + o.pieces + ' piece(s)' : 'None selected. See the customer notes.';
+      o.lines.forEach(function (l, i) {
+        f['Item ' + pad(i + 1)] = l.qty + ' x ' + l.en + (l.price != null
+          ? ' @ ' + usd(l.price) + ' ' + l.unit + ' = ' + usd(l.total)
+          : ' (custom quote: price to be confirmed)');
+      });
+      f['Estimated subtotal'] = usd(o.subtotal) + (o.unpriced ? ' plus ' + o.unpriced + ' item(s) to be quoted' : '');
+      f['Not included'] = 'Delivery, setup and tax';
+      var groups = {};
+      o.lines.forEach(function (l) { (groups[l.cat] = groups[l.cat] || []).push(l.qty + ' x ' + l.en); });
+      Object.keys(groups).forEach(function (g) { f['To prepare: ' + g] = groups[g].join('; '); });
+      f['Customer notes'] = o.notes || '(none)';
+      f['Site language used'] = o.lang;
+      return f;
+    }
+
+    function confirmation(o) {
+      var rows = o.lines.map(function (l) {
+        return '<tr><td>' + l.qty + ' ×</td><td>' + esc(l.local) + '<small>' + (l.price != null ? money(l.price) + ' ' + esc(l.lunit) : esc(S.inv_quote_only)) + '</small></td><td>' +
+          (l.total != null ? money(l.total) : '—') + '</td></tr>';
+      }).join('');
+      var card = d.createElement('div');
+      card.className = 'done-card'; card.setAttribute('role', 'status'); card.tabIndex = -1;
+      card.innerHTML = '<p class="eyebrow">' + esc(S.o_order) + ' ' + esc(o.id) + '</p><h2 class="h2">' + esc(S.o_title) + '</h2><p>' + esc(S.o_body) + '</p>' +
+        (rows ? '<table class="rc"><tbody>' + rows + '</tbody></table><p class="rc-total"><span>' + esc(S.q_est) + '</span><b>' + money(o.subtotal) + '</b></p><p class="fine">' + esc(S.q_fine) + '</p>'
+              : '<p class="fine">' + esc(S.o_none) + '</p>') +
+        '<div class="btns"><button type="button" class="btn btn-dark" data-print>' + esc(S.o_print) + '</button><a class="btn btn-line" href="' + form.getAttribute('data-inventory') + '">' + esc(S.o_back) + '</a></div>';
+      form.parentNode.replaceChild(card, form);
+      $('[data-print]', card).addEventListener('click', function () { window.print(); });
+      card.scrollIntoView({ block: 'start' }); card.focus({ preventScroll: true });
+    }
+
     form.addEventListener('submit', function (e) {
       e.preventDefault();
       var bad = $$('[required]', form).filter(function (f) { var ok = f.value.trim() && f.checkValidity(); f.classList.toggle('bad', !ok); return !ok; });
       if (bad.length) { bad[0].focus(); return; }
-      var m = $('[data-form-msg]'); m.hidden = false; m.textContent = S.c_preview;
+      var msg = $('[data-form-msg]'), btn = form.querySelector('button[type=submit]'), endpoint = form.getAttribute('data-endpoint');
+      if (form.elements._honey && form.elements._honey.value) return;          // bots fill hidden fields
+      if (!endpoint) { msg.hidden = false; msg.textContent = S.c_preview; return; }
+      var order = buildOrder();
+      btn.disabled = true; btn.textContent = S.o_sending; msg.hidden = true;
+      fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, body: JSON.stringify(receipt(order)) })
+        .then(function (r) { return r.json(); })
+        .then(function (res) {
+          if (String(res.success) !== 'true') throw new Error(res.message || 'not sent');
+          Q = {}; save();
+          confirmation(order);
+        })
+        .catch(function (err) {
+          btn.disabled = false; btn.textContent = S.c_send;
+          msg.hidden = false; msg.textContent = S.o_fail;
+          if (window.console) console.warn('Quote request not sent:', err && err.message);
+        });
     });
     form.addEventListener('input', function (e) { if (e.target.classList.contains('bad') && e.target.value.trim()) e.target.classList.remove('bad'); });
+    window.__etOrder = { build: buildOrder, receipt: receipt };                  // lets the receipt be inspected while testing
   }
 })();
