@@ -596,3 +596,9 @@ a.car-s{display:block;cursor:pointer}
   .sec{padding:0}.contact{display:block}.done-card{box-shadow:none;padding:0}
   body{background:#fff}
 }
+
+/* --- size options (tents): text chips instead of colour dots */
+.swsizes{display:flex;flex-wrap:wrap;gap:.35rem}
+.swsizes a{font:400 .74rem/1 var(--sans);letter-spacing:.02em;padding:.38rem .55rem;border:1px solid var(--line-l);color:var(--ink-2);background:#fffdf8;transition:border-color .25s,color .25s}
+.swsizes a:hover,.swsizes a:focus-visible{border-color:var(--gold-2);color:var(--ink)}
+.swa.swt{padding:.6rem .95rem}
