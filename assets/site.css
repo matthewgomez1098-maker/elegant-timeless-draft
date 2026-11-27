@@ -602,3 +602,22 @@ a.car-s{display:block;cursor:pointer}
 .swsizes a{font:400 .74rem/1 var(--sans);letter-spacing:.02em;padding:.38rem .55rem;border:1px solid var(--line-l);color:var(--ink-2);background:#fffdf8;transition:border-color .25s,color .25s}
 .swsizes a:hover,.swsizes a:focus-visible{border-color:var(--gold-2);color:var(--ink)}
 .swa.swt{padding:.6rem .95rem}
+
+/* --- menu: one tab per category, the rest under More */
+.nav{gap:1.45rem;align-items:center}
+.nav a,.nav-more>button{letter-spacing:.14em;white-space:nowrap}
+.nav-more{position:relative}
+.nav-more>button{display:inline-flex;align-items:center;gap:.4rem;font:400 .74rem/1 var(--caps);text-transform:uppercase;color:rgba(246,236,214,.82);padding:.6rem 0;background:none;border:0;cursor:pointer;transition:color .3s}
+.nav-more>button::after{content:"";width:.38rem;height:.38rem;border-right:1px solid currentColor;border-bottom:1px solid currentColor;transform:translateY(-.15rem) rotate(45deg)}
+.nav-more:hover>button,.nav-more:focus-within>button,.nav-more.cur>button{color:var(--gold-hi)}
+.nav-dd{position:absolute;top:100%;right:-1rem;min-width:13rem;padding:.6rem 0;background:rgba(14,12,10,.98);border:1px solid var(--line-d);display:flex;flex-direction:column;opacity:0;visibility:hidden;transform:translateY(.4rem);transition:opacity .25s,transform .25s,visibility .25s;z-index:60}
+.nav-more:hover .nav-dd,.nav-more:focus-within .nav-dd{opacity:1;visibility:visible;transform:none}
+.nav .nav-dd a{padding:.8rem 1.3rem}
+.nav .nav-dd a::after{display:none}
+@media (max-width:1560px){.hd-cta{display:none}}
+@media (max-width:1320px){.nav{display:none}.burger{display:grid}.hd-in{justify-content:space-between}.hd-act>.lang{display:none}}
+@media (max-width:1440px){html[lang=es] .nav{display:none}html[lang=es] .burger{display:grid}html[lang=es] .hd-act>.lang{display:none}html[lang=es] .hd-in{justify-content:space-between}}
+.mnav{align-items:flex-start;overflow-y:auto}
+.mnav-in{padding-top:6.5rem}
+.mnav nav a{font-size:1.5rem;padding:.42rem 0}
+a.chip{text-decoration:none}

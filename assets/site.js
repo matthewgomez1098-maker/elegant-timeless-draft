@@ -174,9 +174,9 @@
   render();
 
   /* ---------- inventory filters + search */
-  var chips = $$('.tbar .chip'), sInput = $('[data-search-input]');
+  var chips = $$('.tbar .chip[data-cat]'), sInput = $('[data-search-input]');
   function filter() {
-    var on = $('.tbar .chip.on'), cat = on ? on.getAttribute('data-cat') : 'all';
+    var on = $('.tbar .chip.on[data-cat]'), cat = on ? on.getAttribute('data-cat') : 'all';
     var q = (sInput ? sInput.value : '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
     var any = false;
     $$('.igroup').forEach(function (g) {
